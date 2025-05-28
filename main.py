@@ -1,53 +1,57 @@
-from fastapi import FastAPI, Query
-from fastapi.responses import PlainTextResponse
+from fastapi import FastAPI
+from pydantic import BaseModel
 
 app = FastAPI()
 
-# Menu
+# Modèle pour recevoir les données JSON
+class RequestData(BaseModel):
+    total: str
+
+# Ton menu, avec les prix (les mêmes que tu avais)
 entrees = {
-    "Salade – Légumes grillés": 13.4,
-    "Brik à l'œuf": 8.9,
-    "Fricassé Tunisien": 6.6
+    "Salade": 13.400,
+    "Brik à l'œuf": 8.900,
+    "Fricassé Tunisien": 6.600,
 }
-
 plats = {
-    "Couscous au Poulet": 18.1,
-    "Kefteji": 24.3,
-    "Entrecôte grillée": 21.2
+    "Couscous au Poulet": 18.100,
+    "Kefteji": 24.300,
+    "Entrecôte grillée": 21.200,
 }
-
 desserts = {
-    "Tiramisu maison": 8.7,
-    "Cheesecake aux fruits rouges": 10.8,
-    "Fondant au chocolat": 12.0
+    "Tiramisu maison": 8.700,
+    "Cheesecake aux fruits rouges": 10.800,
+    "Fondant au chocolat": 12.000,
 }
-
 chichas = {
-    "Chicha Apple": 32.5,
-    "Chicha Love": 44.2,
-    "Chicha Soltan": 53.5
+    "Chicha Apple": 32.500,
+    "Chicha Love": 44.200,
+    "Chicha Soltan": 53.500,
 }
 
-@app.get("/predict", response_class=PlainTextResponse)
-def predict(total: str = Query(...)):
-    try:
-        total = total.replace(",", ".")
-        total_float = round(float(total), 3)
+def trouver_combinaison(total):
+    total = float(total.replace(",", "."))  # transforme la chaîne en float
+    # recherche brute-force de la combinaison (simplifiée)
+    for e, p_e in entrees.items():
+        for pl, p_pl in plats.items():
+            for d, p_d in desserts.items():
+                for c, p_c in chichas.items():
+                    if abs(p_e + p_pl + p_d + p_c - total) < 0.01:
+                        return (e, p_e, pl, p_pl, d, p_d, c, p_c)
+    return None
 
-        for e_name, e_price in entrees.items():
-            for p_name, p_price in plats.items():
-                for d_name, d_price in desserts.items():
-                    for c_name, c_price in chichas.items():
-                        combo_total = round(e_price + p_price + d_price + c_price, 3)
-                        if abs(combo_total - total_float) < 0.001:
-                            return (
-                                f"vous allez choisir :\n"
-                                f"{e_name} – {e_price:.3f} TND\n"
-                                f"{p_name} – {p_price:.3f} TND\n"
-                                f"{d_name} – {d_price:.3f} TND\n"
-                                f"{c_name} – {c_price:.3f} TND\n"
-                                f"et le totale sera {combo_total:.3f} TND."
-                            )
-        return "Aucune combinaison trouvée pour ce total."
-    except:
-        return "Erreur : total invalide."
+@app.post("/predict")
+async def predict(data: RequestData):
+    combo = trouver_combinaison(data.total)
+    if combo is None:
+        return {"result": "Aucune combinaison trouvée pour ce total."}
+    e, p_e, pl, p_pl, d, p_d, c, p_c = combo
+    texte = (
+        "vous allez choisir :\n"
+        f"{e} – {p_e} TND\n"
+        f"{pl} – {p_pl} TND\n"
+        f"{d} – {p_d} TND\n"
+        f"{c} – {p_c} TND\n"
+        f"et le totale sera {data.total} TND."
+    )
+    return {"result": texte}
