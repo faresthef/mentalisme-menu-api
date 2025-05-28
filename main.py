@@ -1,45 +1,51 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 
 app = FastAPI()
 
-# Exemple menu simplifié pour démo
-entrees = {
-    "Salade": 13.4,
-    "Brik à l'œuf": 8.9,
-    "Fricassé Tunisien": 6.6
-}
-plats = {
-    "Couscous au Poulet": 18.1,
-    "Kefteji": 24.3,
-    "Entrecôte grillée": 21.2
-}
-desserts = {
-    "Tiramisu maison": 8.7,
-    "Cheesecake aux fruits rouges": 10.8,
-    "Fondant au chocolat": 12.0
-}
-chichas = {
-    "Chicha Apple": 32.5,
-    "Chicha Love": 44.2,
-    "Chicha Soltan": 53.5
+menu = {
+    "entrees": {
+        "Salade": 13.4,
+        "Brik à l'œuf": 8.9,
+        "Fricassé Tunisien": 6.6
+    },
+    "plats": {
+        "Couscous au Poulet": 18.1,
+        "Kefteji": 24.3,
+        "Entrecôte grillée": 21.2
+    },
+    "desserts": {
+        "Tiramisu maison": 8.7,
+        "Cheesecake aux fruits rouges": 10.8,
+        "Fondant au chocolat": 12.0
+    },
+    "chichas": {
+        "Chicha Apple": 32.5,
+        "Chicha Love": 44.2,
+        "Chicha Soltan": 53.5
+    }
 }
 
-def trouver_combinaison(total: float):
-    # Remplace par ta vraie logique ici
-    # Exemple fixe juste pour test
-    return ("Salade", 13.4), ("Couscous au Poulet", 18.1), ("Tiramisu maison", 8.7), ("Chicha Apple", 32.5)
+@app.post("/predict", response_class=PlainTextResponse)
+async def predict(request: Request):
+    data = await request.json()
+    total_str = data.get("total", "").replace(",", ".")
+    try:
+        target_total = float(total_str)
+    except ValueError:
+        return "Erreur : total invalide."
 
-@app.post("/predict")
-async def predict(total: float = Query(...)):
-    entree, plat, dessert, chicha = trouver_combinaison(total)
+    for e_nom, e_val in menu["entrees"].items():
+        for p_nom, p_val in menu["plats"].items():
+            for d_nom, d_val in menu["desserts"].items():
+                for c_nom, c_val in menu["chichas"].items():
+                    somme = round(e_val + p_val + d_val + c_val, 1)
+                    if somme == round(target_total, 1):
+                        return f"""vous allez choisir :
+{e_nom} ({e_val} TND)
+{p_nom} ({p_val} TND)
+{d_nom} ({d_val} TND)
+{c_nom} ({c_val} TND)
+et le totale sera {somme} TND."""
 
-    texte = (
-        "vous allez choisir :\n"
-        f"{entree[0]} {entree[1]} TND\n"
-        f"{plat[0]} {plat[1]} TND\n"
-        f"{dessert[0]} {dessert[1]} TND\n"
-        f"{chicha[0]} {chicha[1]} TND\n"
-        f"et le total sera {total} TND."
-    )
-    return PlainTextResponse(texte)
+    return "Aucune combinaison trouvée pour ce total."
