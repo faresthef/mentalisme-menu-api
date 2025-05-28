@@ -1,51 +1,40 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-menu = {
-    "entrees": {
-        "Salade": 13.4,
-        "Brik à l'œuf": 8.9,
-        "Fricassé Tunisien": 6.6
-    },
-    "plats": {
-        "Couscous au Poulet": 18.1,
-        "Kefteji": 24.3,
-        "Entrecôte grillée": 21.2
-    },
-    "desserts": {
-        "Tiramisu maison": 8.7,
-        "Cheesecake aux fruits rouges": 10.8,
-        "Fondant au chocolat": 12.0
-    },
-    "chichas": {
-        "Chicha Apple": 32.5,
-        "Chicha Love": 44.2,
-        "Chicha Soltan": 53.5
-    }
-}
-
-@app.post("/predict", response_class=PlainTextResponse)
+@app.post("/predict")
 async def predict(request: Request):
-    data = await request.json()
-    total_str = data.get("total", "").replace(",", ".")
+    # Lire le corps brut (bytes), décoder en utf-8 et strip les espaces
+    raw_data = (await request.body()).decode("utf-8").strip()
+
+    # Remplacer la virgule par un point pour la conversion float
+    raw_data = raw_data.replace(",", ".")
+
     try:
-        target_total = float(total_str)
+        total_value = float(raw_data)
     except ValueError:
-        return "Erreur : total invalide."
+        return JSONResponse(status_code=400, content={"error": f"Valeur invalide: '{raw_data}'"})
 
-    for e_nom, e_val in menu["entrees"].items():
-        for p_nom, p_val in menu["plats"].items():
-            for d_nom, d_val in menu["desserts"].items():
-                for c_nom, c_val in menu["chichas"].items():
-                    somme = round(e_val + p_val + d_val + c_val, 1)
-                    if somme == round(target_total, 1):
-                        return f"""vous allez choisir :
-{e_nom} ({e_val} TND)
-{p_nom} ({p_val} TND)
-{d_nom} ({d_val} TND)
-{c_nom} ({c_val} TND)
-et le totale sera {somme} TND."""
+    # Appeler ta fonction de recherche de combinaison
+    result = find_combination(total_value)
 
-    return "Aucune combinaison trouvée pour ce total."
+    if result is None:
+        return {"message": "Aucune combinaison trouvée pour ce total."}
+    else:
+        return {"result": result}
+
+def find_combination(total):
+    # Exemple fictif d'une recherche exacte (à remplacer par ta logique)
+    if total == 48.2:
+        return [
+            "Entrée: salade (10.0 TND)",
+            "Plat: couscous (38.2 TND)"
+        ]
+    if total == 88.2:
+        return [
+            "Entrée: soupe (15.0 TND)",
+            "Plat: tajine (50.0 TND)",
+            "Dessert: baklava (23.2 TND)"
+        ]
+    return None
