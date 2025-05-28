@@ -1,57 +1,52 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.responses import PlainTextResponse
+from fastapi import Query
 
 app = FastAPI()
 
-# Modèle pour recevoir les données JSON
-class RequestData(BaseModel):
-    total: str
-
-# Ton menu, avec les prix (les mêmes que tu avais)
+# Exemple simplifié de menu avec prix
 entrees = {
-    "Salade": 13.400,
-    "Brik à l'œuf": 8.900,
-    "Fricassé Tunisien": 6.600,
-}
-plats = {
-    "Couscous au Poulet": 18.100,
-    "Kefteji": 24.300,
-    "Entrecôte grillée": 21.200,
-}
-desserts = {
-    "Tiramisu maison": 8.700,
-    "Cheesecake aux fruits rouges": 10.800,
-    "Fondant au chocolat": 12.000,
-}
-chichas = {
-    "Chicha Apple": 32.500,
-    "Chicha Love": 44.200,
-    "Chicha Soltan": 53.500,
+    "Salade": 13.4,
+    "Brik à l'œuf": 8.9,
+    "Fricassé Tunisien": 6.6
 }
 
-def trouver_combinaison(total):
-    total = float(total.replace(",", "."))  # transforme la chaîne en float
-    # recherche brute-force de la combinaison (simplifiée)
-    for e, p_e in entrees.items():
-        for pl, p_pl in plats.items():
-            for d, p_d in desserts.items():
-                for c, p_c in chichas.items():
-                    if abs(p_e + p_pl + p_d + p_c - total) < 0.01:
-                        return (e, p_e, pl, p_pl, d, p_d, c, p_c)
-    return None
+plats = {
+    "Couscous au Poulet": 18.1,
+    "Kefteji": 24.3,
+    "Entrecôte grillée": 21.2
+}
+
+desserts = {
+    "Tiramisu maison": 8.7,
+    "Cheesecake aux fruits rouges": 10.8,
+    "Fondant au chocolat": 12.0
+}
+
+chichas = {
+    "Chicha Apple": 32.5,
+    "Chicha Love": 44.2,
+    "Chicha Soltan": 53.5
+}
+
+def trouver_combinaison(total: float):
+    # Ici tu mets ta vraie logique pour trouver la combinaison (entrée, plat, dessert, chicha)
+    # Pour l'exemple on fixe une combinaison "bidon"
+    # Dans ta vraie version, tu fais la recherche exhaustive
+
+    # Exemple fixe pour test
+    return ("Salade", 13.4), ("Couscous au Poulet", 18.1), ("Tiramisu maison", 8.7), ("Chicha Apple", 32.5)
 
 @app.post("/predict")
-async def predict(data: RequestData):
-    combo = trouver_combinaison(data.total)
-    if combo is None:
-        return {"result": "Aucune combinaison trouvée pour ce total."}
-    e, p_e, pl, p_pl, d, p_d, c, p_c = combo
+async def predict(total: float = Query(..., description="Total de la commande")):
+    entree, plat, dessert, chicha = trouver_combinaison(total)
+
     texte = (
         "vous allez choisir :\n"
-        f"{e} – {p_e} TND\n"
-        f"{pl} – {p_pl} TND\n"
-        f"{d} – {p_d} TND\n"
-        f"{c} – {p_c} TND\n"
-        f"et le totale sera {data.total} TND."
+        f"{entree[0]} {entree[1]} TND\n"
+        f"{plat[0]} {plat[1]} TND\n"
+        f"{dessert[0]} {dessert[1]} TND\n"
+        f"{chicha[0]} {chicha[1]} TND\n"
+        f"et le total sera {total} TND."
     )
-    return {"result": texte}
+    return PlainTextResponse(content=texte)
