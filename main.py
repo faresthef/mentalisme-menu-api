@@ -1,28 +1,24 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.responses import PlainTextResponse
-from fastapi import Query
 
 app = FastAPI()
 
-# Exemple simplifié de menu avec prix
+# Exemple menu simplifié pour démo
 entrees = {
     "Salade": 13.4,
     "Brik à l'œuf": 8.9,
     "Fricassé Tunisien": 6.6
 }
-
 plats = {
     "Couscous au Poulet": 18.1,
     "Kefteji": 24.3,
     "Entrecôte grillée": 21.2
 }
-
 desserts = {
     "Tiramisu maison": 8.7,
     "Cheesecake aux fruits rouges": 10.8,
     "Fondant au chocolat": 12.0
 }
-
 chichas = {
     "Chicha Apple": 32.5,
     "Chicha Love": 44.2,
@@ -30,15 +26,12 @@ chichas = {
 }
 
 def trouver_combinaison(total: float):
-    # Ici tu mets ta vraie logique pour trouver la combinaison (entrée, plat, dessert, chicha)
-    # Pour l'exemple on fixe une combinaison "bidon"
-    # Dans ta vraie version, tu fais la recherche exhaustive
-
-    # Exemple fixe pour test
+    # Remplace par ta vraie logique ici
+    # Exemple fixe juste pour test
     return ("Salade", 13.4), ("Couscous au Poulet", 18.1), ("Tiramisu maison", 8.7), ("Chicha Apple", 32.5)
 
 @app.post("/predict")
-async def predict(total: float = Query(..., description="Total de la commande")):
+async def predict(total: float = Query(...)):
     entree, plat, dessert, chicha = trouver_combinaison(total)
 
     texte = (
@@ -49,4 +42,4 @@ async def predict(total: float = Query(..., description="Total de la commande"))
         f"{chicha[0]} {chicha[1]} TND\n"
         f"et le total sera {total} TND."
     )
-    return PlainTextResponse(content=texte)
+    return PlainTextResponse(texte)
