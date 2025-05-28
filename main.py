@@ -1,40 +1,58 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Form
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# Menu avec les bons prix
+entrees = {
+    "Salade": 13.4,
+    "Brik à l'œuf": 8.9,
+    "Fricassé Tunisien": 6.6
+}
+
+plats = {
+    "Couscous au Poulet": 18.1,
+    "Kefteji": 24.3,
+    "Entrecôte grillée": 21.2
+}
+
+desserts = {
+    "Tiramisu maison": 8.7,
+    "Cheesecake aux fruits rouges": 10.8,
+    "Fondant au chocolat": 12.0
+}
+
+chichas = {
+    "Chicha Apple": 32.5,
+    "Chicha Love": 44.2,
+    "Chicha Soltan": 53.5
+}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.post("/predict")
-async def predict(request: Request):
-    # Lire le corps brut (bytes), décoder en utf-8 et strip les espaces
-    raw_data = (await request.body()).decode("utf-8").strip()
+async def predict(total: float = Form(...)):
+    total = round(total, 3)
 
-    # Remplacer la virgule par un point pour la conversion float
-    raw_data = raw_data.replace(",", ".")
-
-    try:
-        total_value = float(raw_data)
-    except ValueError:
-        return JSONResponse(status_code=400, content={"error": f"Valeur invalide: '{raw_data}'"})
-
-    # Appeler ta fonction de recherche de combinaison
-    result = find_combination(total_value)
-
-    if result is None:
-        return {"message": "Aucune combinaison trouvée pour ce total."}
-    else:
-        return {"result": result}
-
-def find_combination(total):
-    # Exemple fictif d'une recherche exacte (à remplacer par ta logique)
-    if total == 48.2:
-        return [
-            "Entrée: salade (10.0 TND)",
-            "Plat: couscous (38.2 TND)"
-        ]
-    if total == 88.2:
-        return [
-            "Entrée: soupe (15.0 TND)",
-            "Plat: tajine (50.0 TND)",
-            "Dessert: baklava (23.2 TND)"
-        ]
-    return None
+    for e_name, e_price in entrees.items():
+        for p_name, p_price in plats.items():
+            for d_name, d_price in desserts.items():
+                for c_name, c_price in chichas.items():
+                    if round(e_price + p_price + d_price + c_price, 3) == total:
+                        message = (
+                            f"vous allez choisir :\n"
+                            f"{e_name} - {e_price:.3f} TND\n"
+                            f"{p_name} - {p_price:.3f} TND\n"
+                            f"{d_name} - {d_price:.3f} TND\n"
+                            f"{c_name} - {c_price:.3f} TND\n"
+                            f"et le total sera {total:.3f} TND."
+                        )
+                        return {"message": message}
+    
+    return {"message": "Aucune combinaison trouvée pour ce total."}
